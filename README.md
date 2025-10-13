@@ -8,3 +8,5 @@ It's required some open source softwares:
 - picard v3.4 (http://broadinstitute.github.io/picard)
 - bedtools v2.31 (https://bedtools.readthedocs.io/en/latest/)
 - GATK v4.2.5 (https://gatk.broadinstitute.org/hc/en-us)
+
+To run the example, you will need the reference genome of lyrata available in https://zenodo.org/records/17287897 
