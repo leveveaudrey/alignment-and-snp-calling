@@ -1,1 +1,3 @@
-
+the files lyrata_384.bed and lyrata384.fa.fai are used in example
+the SRA data of the example are directly download by code (getwd lines)
+the reference genome must be downloaded from zenodo (https://zenodo.org/records/17287897) and rename lyrata384.fa
