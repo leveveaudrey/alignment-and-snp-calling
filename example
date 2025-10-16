@@ -1,3 +1,61 @@
 the files lyrata_384.bed and lyrata384.fa.fai are used in example
 the SRA data of the example are directly download by code (getwd lines)
 the reference genome must be downloaded from zenodo (https://zenodo.org/records/17287897) and rename lyrata384.fa
+
+
+
+
+bash line code: 
+
+#!/bin/bash
+#PBS -N pipeline_alignment
+#PBS -l select=1:ncpus=6:mem=10gb:scratch_local=10gb
+#PBS -l walltime=47:00:00 
+#PBS -m ae
+# The 4 lines above are options for scheduling system: job will run 24 hour at maximum, 1 machine with 6 processors + 4gb RAM memory + 10gb scratch memory are requested, email notification will be sent when the job aborts (a) or ends (e)
+
+# define a DATADIR variable: directory where the input files are taken from and where output will be copied to
+DATADIR=/home/data_extract/North_americ_willy/
+TMPDIR=$SCRATCHDIR
+
+# append a line to a file "jobs_info.txt" containing the ID of the job, the hostname of node it is run on and the path to a scratch directory
+# this information helps to find a scratch directory in case the job fails and you need to remove the scratch directory manually 
+echo "$PBS_JOBID is running on node `hostname -f` in a scratch directory $SCRATCHDIR" >> $DATADIR/jobs_info.txt
+
+#Add necessary modules
+module add bowtie2
+module add samtools
+module add picard
+module add bedtools
+module add gatk
+
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR182/008/ERR1822668/ERR1822668_1.fastq.gz
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR182/008/ERR1822668/ERR1822668_2.fastq.gz
+gunzip *.fastq.gz
+bowtie2 --phred33 --rg-id ERR1822668 --rg "PL:ILLUMINA" --rg "SM:ERR1822668" -S ERR1822668.sam --minins 0 --maxins 1000 -x lyrata384 -1 ERR1822668_1.fastq -2 ERR1822668_2.fastq > ERR1822668_stderr
+
+samtools view -S -f 2 -b ERR1822668.sam > ERR1822668.bam
+samtools stats ERR1822668.bam 2>> ERR1822668_samtools_stats_stderr.txt| grep ^SN | cut -f2- >> ERR1822668_samtools_stats.txt
+samtools sort ERR1822668.bam -o ERR1822668_sorted.bam
+samtools index ERR1822668_sorted.bam
+module unload samtools
+
+touch ERR1822668_PPSMd.bam
+touch ERR1822668_PPsMd_MATRIX
+picard MarkDuplicates -I ERR1822668_sorted.bam -O ERR1822668_PPSMd.bam -M ERR1822668_PPsMd_MATRIX --REMOVE_DUPLICATES true -AS true > ERR1822668_markduplicates_stderr > ERR1822668_markduplicates_stdout
+
+touch ERR1822668_PPSMdTi.bam
+bedtools intersect -b lyrata_384.bed -a ERR1822668_PPSMd.bam > ERR1822668_PPSMdTi.bam
+
+samtools index ERR1822668_PPSMdTi.bam 
+samtools stats ERR1822668_PPSMdTi.bam 2>> ERR1822668_final_samtools_stats_stderr.txt| grep ^SN | cut -f2- >> ERR1822668_finalsamtools_stats.txt
+samtools depth -a ERR1822668_PPSMdTi.bam >> ERR1822668_depth.csv
+
+
+gatk --java-options "-Xmx4g" HaplotypeCaller -R /auto/plzen1/home/levevea/ref_lyrata/lyrata384.fa -I ERR1822668_PPSMdTi.bam -bamout ERR1822668_PPSMdTi_gatk.bam -ERC GVCF --sample-ploidy 50 -O ERR1822668.g.vcf >> ERR1822668_GATK_HC_stderr >ERR1822668_GATK_HC_stdout
+gatk GenotypeGVCFs -R lyrata384.fa --variant ERR1822668.g.vcf -O GATK_HC_ERR1822668.vcf
+
+
+
+
+
