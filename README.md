@@ -1,5 +1,5 @@
 # alignment-and-snp-calling
-Lines of code to do alignment and SNP calling with one example with the SRA sample ERR1822668 aligned on A. lyrata
+Lines of code to do alignment and SNP calling with one example with the SRA sample ERR1822668 aligned on A. lyrata are on file example
 
 This pipeline is for a machine with 6 CPU and memory of 10gb
 It's required some open source softwares:
